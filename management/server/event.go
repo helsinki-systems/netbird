@@ -21,6 +21,11 @@ func isEnabled() bool {
 	return response == "" || response == "true"
 }
 
+func isBrokerEnabled() bool {
+	response := os.Getenv("NB_EVENT_ACTIVITY_PUBLISH_ENABLED")
+	return response == "" || response == "true"
+}
+
 // GetEvents returns a list of activity events of an account
 func (am *DefaultAccountManager) GetEvents(ctx context.Context, accountID, userID string) ([]*activity.Event, error) {
 	allowed, err := am.permissionsManager.ValidateUserPermissions(ctx, accountID, userID, modules.Events, operations.Read)
@@ -65,6 +70,22 @@ func (am *DefaultAccountManager) StoreEvent(ctx context.Context, initiatorID, ta
 	if isEnabled() {
 		go func() {
 			_, err := am.eventStore.Save(ctx, &activity.Event{
+				Timestamp:   time.Now().UTC(),
+				Activity:    activityID.(activity.Activity),
+				InitiatorID: initiatorID,
+				TargetID:    targetID,
+				AccountID:   accountID,
+				Meta:        meta,
+			})
+			if err != nil {
+				// todo add metric
+				log.WithContext(ctx).Errorf("received an error while storing an activity event, error: %s", err)
+			}
+		}()
+	}
+	if isBrokerEnabled() {
+		go func() {
+			_, err := am.eventBroker.Send(ctx, &activity.Event{
 				Timestamp:   time.Now().UTC(),
 				Activity:    activityID.(activity.Activity),
 				InitiatorID: initiatorID,
