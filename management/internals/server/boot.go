@@ -40,6 +40,7 @@ import (
 	activitystore "github.com/netbirdio/netbird/management/server/activity/store"
 	"github.com/netbirdio/netbird/management/server/api/v1alpha1"
 	nbcache "github.com/netbirdio/netbird/management/server/cache"
+	"github.com/netbirdio/netbird/management/server/activity/broker"
 	nbContext "github.com/netbirdio/netbird/management/server/context"
 	nbhttp "github.com/netbirdio/netbird/management/server/http"
 	"github.com/netbirdio/netbird/management/server/http/middleware"
@@ -183,6 +184,16 @@ func (s *BaseServer) EventStore() activity.Store {
 		}
 
 		return eventStore
+	})
+}
+
+func (s *BaseServer) EventBroker() activity.Broker {
+	return Create(s, func() activity.Broker {
+		eventBroker, err := broker.SetupClient(context.Background())
+		if err != nil {
+			log.Fatalf("failed to initialize event broker: %v", err)
+		}
+		return eventBroker
 	})
 }
 

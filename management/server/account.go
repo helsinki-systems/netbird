@@ -79,6 +79,7 @@ type DefaultAccountManager struct {
 	externalCacheManager nbcache.UserDataCache
 	ctx                  context.Context
 	eventStore           activity.Store
+	eventBroker          activity.Broker
 	geo                  geolocation.Geolocation
 
 	requestBuffer *AccountRequestBuffer
@@ -220,6 +221,7 @@ func BuildManager(
 	idpManager idp.Manager,
 	singleAccountModeDomain string,
 	eventStore activity.Store,
+	eventBroker activity.Broker,
 	geo geolocation.Geolocation,
 	userDeleteFromIDPEnabled bool,
 	integratedPeerValidator integrated_validator.IntegratedValidator,
@@ -245,6 +247,7 @@ func BuildManager(
 		cacheMux:                 sync.Mutex{},
 		cacheLoading:             map[string]chan struct{}{},
 		eventStore:               eventStore,
+		eventBroker:              eventBroker,
 		peerLoginExpiry:          NewDefaultScheduler(),
 		peerInactivityExpiry:     NewDefaultScheduler(),
 		userDeleteFromIDPEnabled: userDeleteFromIDPEnabled,

@@ -21,6 +21,11 @@ func isEnabled() bool {
 	return response == "" || response == "true"
 }
 
+func isBrokerEnabled() bool {
+	response := os.Getenv("NB_EVENT_ACTIVITY_PUBLISH_ENABLED")
+	return response == "" || response == "true"
+}
+
 // GetEvents returns a list of activity events of an account
 func (am *DefaultAccountManager) GetEvents(ctx context.Context, accountID, userID string) ([]*activity.Event, error) {
 	allowed, ctx, err := am.permissionsManager.ValidateUserPermissions(ctx, accountID, userID, modules.Events, operations.Read)
@@ -63,6 +68,21 @@ func (am *DefaultAccountManager) GetEvents(ctx context.Context, accountID, userI
 
 // StoreEvent records an activity, waiting for expiration events before cleanup can stop.
 func (am *DefaultAccountManager) StoreEvent(ctx context.Context, initiatorID, targetID, accountID string, activityID activity.ActivityDescriber, meta map[string]any) {
+	if isBrokerEnabled() {
+		go func(ctx context.Context) {
+			_, err := am.eventBroker.Send(ctx, &activity.Event{
+				Timestamp:   time.Now().UTC(),
+				Activity:    activityID.(activity.Activity),
+				InitiatorID: initiatorID,
+				TargetID:    targetID,
+				AccountID:   accountID,
+				Meta:        meta,
+			})
+			if err != nil {
+				log.WithContext(ctx).Errorf("received an error while publishing an activity event, error: %s", err)
+			}
+		}(context.WithoutCancel(ctx))
+	}
 	if !isEnabled() {
 		return
 	}
