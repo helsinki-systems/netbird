@@ -139,7 +139,7 @@ func (m *Manager) Start(ctx context.Context) {
 		default:
 		}
 	})
-	go m.update.StartFetcher()
+	// go m.update.StartFetcher()
 
 	ctx, cancel := context.WithCancel(ctx)
 	m.cancel = cancel
