@@ -118,6 +118,15 @@ func NewManager(ctx context.Context, config Config, appMetrics telemetry.AppMetr
 	switch strings.ToLower(config.ManagerType) {
 	case "none", "":
 		return nil, nil //nolint:nilnil
+	case "elma":
+		elmaClientConfig := &ElmaClientConfig{
+			ElmaDomain:   config.ExtraConfig["ElmaDomain"],
+			OrgID:        config.ExtraConfig["OrgID"],
+			ClientID:     config.ClientConfig.ClientID,
+			ClientSecret: config.ClientConfig.ClientSecret,
+		}
+
+		return NewElmaIDP(*elmaClientConfig, appMetrics)
 	case "auth0":
 		auth0ClientConfig := config.Auth0ClientCredentials
 		if config.ClientConfig != nil {
