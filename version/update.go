@@ -52,7 +52,7 @@ func NewUpdate(httpAgent string) *Update {
 
 func NewUpdateAndStart(httpAgent string) *Update {
 	u := NewUpdate(httpAgent)
-	go u.StartFetcher()
+	// go u.StartFetcher()
 
 	return u
 }
