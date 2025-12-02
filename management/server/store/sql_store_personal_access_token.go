@@ -134,24 +134,13 @@ func (s *SqlStore) GetUserPATs(ctx context.Context, lockStrength LockingStrength
 // NotFound error when the token doesn't exist.
 func (s *SqlStore) MarkPATUsed(ctx context.Context, patID string) error {
 	now := time.Now().UTC()
-	result := s.db.Model(&types.PersonalAccessToken{}).
+	// Skip the default transaction and swallow errors to avoid PAT deadlocks.
+	result := s.db.Session(&gorm.Session{SkipDefaultTransaction: true}).Model(&types.PersonalAccessToken{}).
 		Where(idQueryCondition, patID).
 		Where("last_used IS NULL OR last_used < ?", now.Add(-types.PATLastUsedUpdateInterval)).
 		Update("last_used", now)
 	if result.Error != nil {
 		log.WithContext(ctx).Errorf("failed to mark pat as used: %s", result.Error)
-		return status.Errorf(status.Internal, "failed to mark pat as used")
-	}
-
-	if result.RowsAffected == 0 {
-		var count int64
-		if err := s.db.Model(&types.PersonalAccessToken{}).Where(idQueryCondition, patID).Count(&count).Error; err != nil {
-			log.WithContext(ctx).Errorf("failed to check pat existence: %s", err)
-			return status.Errorf(status.Internal, "failed to mark pat as used")
-		}
-		if count == 0 {
-			return status.NewPATNotFoundError(patID)
-		}
 	}
 
 	return nil
