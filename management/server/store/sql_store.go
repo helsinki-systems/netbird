@@ -35,7 +35,6 @@ import (
 	"github.com/netbirdio/netbird/management/server/posture"
 	"github.com/netbirdio/netbird/management/server/telemetry"
 	"github.com/netbirdio/netbird/management/server/types"
-	"github.com/netbirdio/netbird/management/server/util"
 	"github.com/netbirdio/netbird/route"
 	"github.com/netbirdio/netbird/shared/management/status"
 )
@@ -3899,20 +3898,17 @@ func (s *SqlStore) GetUserPATs(ctx context.Context, lockStrength LockingStrength
 
 // MarkPATUsed marks a personal access token as used.
 func (s *SqlStore) MarkPATUsed(ctx context.Context, patID string) error {
-	patCopy := types.PersonalAccessToken{
-		LastUsed: util.ToPtr(time.Now().UTC()),
-	}
+	result := s.db.Session(&gorm.Session{SkipDefaultTransaction: true}).Model(&types.PersonalAccessToken{}).
+		Where(idQueryCondition, patID).
+		Update("last_used", time.Now().UTC())
 
-	fieldsToUpdate := []string{"last_used"}
-	result := s.db.Select(fieldsToUpdate).
-		Where(idQueryCondition, patID).Updates(&patCopy)
 	if result.Error != nil {
 		log.WithContext(ctx).Errorf("failed to mark pat as used: %s", result.Error)
-		return status.Errorf(status.Internal, "failed to mark pat as used")
+		return nil
 	}
 
 	if result.RowsAffected == 0 {
-		return status.NewPATNotFoundError(patID)
+		return nil
 	}
 
 	return nil
