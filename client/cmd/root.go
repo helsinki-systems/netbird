@@ -285,7 +285,12 @@ func DialClientGRPCServer(ctx context.Context, addr string) (*grpc.ClientConn, e
 	defer cancel()
 
 	target, opts := daddr.DialTarget(addr)
-	opts = append(opts, grpc.WithBlock())
+	opts = append(opts,
+		grpc.WithBlock(),
+		grpc.WithReturnConnectionError(),
+		grpc.WithDisableRetry(),
+		grpc.FailOnNonTempDialError(true),
+	)
 
 	return grpc.DialContext(ctx, target, opts...)
 }
