@@ -1796,7 +1796,7 @@ func toRoutes(protoRoutes []*mgmProto.Route) []*route.Route {
 			Metric:        int(protoRoute.Metric),
 			Masquerade:    protoRoute.Masquerade,
 			KeepRoute:     protoRoute.KeepRoute,
-			SkipAutoApply: protoRoute.SkipAutoApply,
+			SkipAutoApply: true,
 		}
 		routes = append(routes, convertedRoute)
 	}

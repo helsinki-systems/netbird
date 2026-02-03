@@ -239,6 +239,11 @@ func (rs *RouteSelector) FilterSelectedExitNodes(routes route.HAMap) route.HAMap
 	filtered := make(route.HAMap, len(routes))
 	for id, rt := range routes {
 		netID := id.NetID()
+		if len(rt) > 0 && rt[0].SkipAutoApply && !rs.hasUserSelectionForRouteLocked(netID) {
+			rs.deselectedRoutes[netID] = struct{}{}
+			continue
+		}
+
 		if rs.isDeselectedLocked(netID) {
 			continue
 		}
