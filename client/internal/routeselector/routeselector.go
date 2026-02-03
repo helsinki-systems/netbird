@@ -179,6 +179,11 @@ func (rs *RouteSelector) FilterSelectedExitNodes(routes route.HAMap) route.HAMap
 	filtered := make(route.HAMap, len(routes))
 	for id, rt := range routes {
 		netID := id.NetID()
+		if len(rt) > 0 && rt[0].SkipAutoApply && !rs.hasUserSelectionsForRoute(netID) {
+			rs.deselectedRoutes[netID] = struct{}{}
+			continue
+		}
+
 		if rs.isDeselected(netID) {
 			continue
 		}
@@ -227,6 +232,12 @@ func (rs *RouteSelector) applyExitNodeFilter(
 
 func (rs *RouteSelector) hasUserSelections() bool {
 	return len(rs.selectedRoutes) > 0 || len(rs.deselectedRoutes) > 0
+}
+
+func (rs *RouteSelector) hasUserSelectionsForRoute(netID route.NetID) bool {
+	_, existsSelected := rs.selectedRoutes[netID]
+	_, existsDeselected := rs.deselectedRoutes[netID]
+	return existsSelected || existsDeselected
 }
 
 func collectSelected(rt []*route.Route) []*route.Route {
