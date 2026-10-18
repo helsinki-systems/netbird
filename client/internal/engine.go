@@ -506,6 +506,17 @@ func (e *Engine) Start(netbirdConfig *mgmProto.NetbirdConfig, mgmtURL *url.URL) 
 		DisableClientRoutes: e.config.DisableClientRoutes,
 		DisableServerRoutes: e.config.DisableServerRoutes,
 	})
+
+	// Android needs routeSelector initialized before creating the interface
+	e.routeManager.InitRouteSelector()
+
+	// Create interface so routeManager can target it.
+	if err = e.wgInterfaceCreate(); err != nil {
+		log.Errorf("failed creating tunnel interface %s: [%s]", e.config.WgIfaceName, err.Error())
+		e.close()
+		return fmt.Errorf("create wg interface: %w", err)
+	}
+
 	if err := e.routeManager.Init(); err != nil {
 		log.Errorf("Failed to initialize route manager: %s", err)
 	}
@@ -513,12 +524,6 @@ func (e *Engine) Start(netbirdConfig *mgmProto.NetbirdConfig, mgmtURL *url.URL) 
 	e.routeManager.SetRouteChangeListener(e.mobileDep.NetworkChangeListener)
 
 	e.dnsServer.SetRouteSources(e.routeManager.GetSelectedClientRoutes, e.routeManager.GetActiveClientRoutes)
-
-	if err = e.wgInterfaceCreate(); err != nil {
-		log.Errorf("failed creating tunnel interface %s: [%s]", e.config.WgIfaceName, err.Error())
-		e.close()
-		return fmt.Errorf("create wg interface: %w", err)
-	}
 
 	if err := e.createFirewall(); err != nil {
 		e.close()
